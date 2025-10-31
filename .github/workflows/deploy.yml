@@ -1,4 +1,4 @@
-name: Kalam Kaam build test and deploy
+name: Kalam Kaam Build, Test, and Deploy
 
 on:
   push:
@@ -7,9 +7,13 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ========================================================
+  # BUILD STAGE
+  # ========================================================
   build:
-    name: Build, Install Frontend and Backend
+    name: Build Frontend & Backend
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -19,18 +23,21 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install and Build Frontend
+      # -------- FRONTEND BUILD --------
+      - name: Install & Build Frontend
         run: |
           cd frontend
           npm install
           npm run build
 
-      - name: Install Backend
+      # -------- BACKEND INSTALL --------
+      - name: Install Backend Dependencies
         run: |
           cd backend
           npm install
 
-      - name: Artifact the build_output
+      # -------- UPLOAD ARTIFACT --------
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: build_output
@@ -38,22 +45,30 @@ jobs:
             frontend/dist
             backend
 
+  # ========================================================
+  # TEST STAGE
+  # ========================================================
   test:
-    name: Test
+    name: Run Tests
     needs: build
     runs-on: ubuntu-latest
+
     steps:
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
           name: build_output
+          path: .
 
       - name: Run Tests
         run: |
-          echo "✅ Test Passed Successfully"
+          echo "✅ Tests passed successfully!"
 
+  # ========================================================
+  # DEPLOY STAGE
+  # ========================================================
   deploy:
-    name: Deploy
+    name: Deploy to VPS
     needs: [build, test]
     runs-on: ubuntu-latest
 
@@ -62,6 +77,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build_output
+          path: .
 
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.9.0
@@ -73,7 +89,7 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H 147.93.20.180 >> ~/.ssh/known_hosts
 
-      - name: Create Target Folders on VPS
+      - name: Create target folders on VPS
         run: |
           ssh root@147.93.20.180 "
             mkdir -p /var/www/kalamkaam.in/auth_app/frontend/dist
@@ -82,13 +98,13 @@ jobs:
 
       - name: Upload Frontend
         run: |
-          rsync -avz --delete --exclude=".env" build_output/frontend/dist/ root@147.93.20.180:/var/www/kalamkaam.in/auth_app/frontend/dist/
+          rsync -avz --delete ./frontend/dist/ root@147.93.20.180:/var/www/kalamkaam.in/auth_app/frontend/dist/
 
       - name: Upload Backend
         run: |
-          rsync -avz --delete --exclude="node_modules" --exclude=".env" build_output/backend/ root@147.93.20.180:/var/www/kalamkaam.in/auth_app/backend/
+          rsync -avz --delete --exclude="node_modules" --exclude=".env" ./backend/ root@147.93.20.180:/var/www/kalamkaam.in/auth_app/backend/
 
-      - name: Restart Server
+      - name: Restart Server Services
         run: |
           ssh root@147.93.20.180 "
             cd /var/www/kalamkaam.in/auth_app/backend
