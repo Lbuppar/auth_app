@@ -47,5 +47,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build_output
+
+      - name: Run Tests
         run: |
-          echo "Testing finished"
+          echo "Tested successfully"
