@@ -187,7 +187,7 @@ jobs:
           # sudo systemctl restart nginx → restart Nginx web server to serve frontend
 
   rollback:
-    needs: [build-and-test, deploy]
+    needs: [build, test, deploy]
     runs-on: ubuntu-latest
     if: failure() # Only runs if previous jobs fail
 
