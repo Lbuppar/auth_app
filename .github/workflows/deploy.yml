@@ -67,6 +67,8 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0s
         with:
           ssh-private-key: ${{secrets.SSH_PRIVATE_KEY}}
+
+      - name: Add VPS to known Host
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H 147.93.20.180 >> ~/.ssh/known_hosts
