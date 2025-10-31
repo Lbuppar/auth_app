@@ -186,27 +186,18 @@ jobs:
           # pm2 reload all → refresh Node.js app without downtime
           # sudo systemctl restart nginx → restart Nginx web server to serve frontend
 
-  # =====================================================================
-  # 🔄 JOB 4️⃣: ROLLBACK STAGE
-  # =====================================================================
-  rollback:
-    if: failure() # ⚠️ Runs only if any previous job fails
-    runs-on: ubuntu-latest
+rollback:
+  needs: [build-and-test, deploy]
+  runs-on: ubuntu-latest
+  if: failure() # Only runs if previous jobs fail
 
-    steps:
-      - name: Restore Last Backup
-        run: |
-          ssh root@147.93.20.180 "
-            cd /var/www/kalamkaaam.in/backup
-            latest_backup=$(ls -t app_backup_*.tar.gz | head -1)
-            tar -xzf $latest_backup -C /
-          "
-          # 🧠 Explanation:
-          # cd → go to backup folder
-          # ls -t → list by modification time (latest first)
-          # head -1 → take first one (newest backup)
-          # tar -xzf → extract and restore files from backup
-          #   x → extract
-          #   z → decompress gzip
-          #   f → file name
-          # Restores last working version automatically if deploy fails.
+  steps:
+    - name: Restore Last Backup
+      run: |
+        ssh root@147.93.20.180 "
+          systemctl stop auth_app
+          cd /var/www/kalamkaam.in/backup
+          latest_backup=\$(ls -t app_backup_*.tar.gz | head -1)
+          tar -xzf \$latest_backup -C /var/www/kalamkaam.in
+          systemctl start auth_app
+        "
