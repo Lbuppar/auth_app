@@ -1,16 +1,303 @@
-# React + Vite
+# # =====================================================================
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# # 📘 FULL GITHUB ACTIONS CI/CD PIPELINE (LEARNING VERSION WITH ARTIFACTS)
 
-Currently, two official plugins are available:
+# # =====================================================================
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+# # 🚀 PURPOSE:
 
-## React Compiler
+# # Automate Build → Test → Deploy → Rollback for a MERN App (React + Node)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+# # Includes artifact sharing between jobs (build → test → deploy).
 
-## Expanding the ESLint configuration
+# # Each line is documented for learning.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# # =====================================================================
+
+# name: MERN CI/CD Pipeline - Full Notes + Artifact Version
+
+# # ---------------------------------------------------------------------
+
+# # 🔁 TRIGGERS
+
+# # ---------------------------------------------------------------------
+
+# on:
+
+# push:
+
+# branches:
+
+# - main # Automatically run when code is pushed to "main"
+
+# workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+# # =====================================================================
+
+# # 🧱 JOB 1️⃣: BUILD STAGE
+
+# # =====================================================================
+
+# jobs:
+
+# build:
+
+# runs-on: ubuntu-latest # GitHub provides Ubuntu VM for each job
+
+# steps:
+
+# # ---------------------------------------------------------------
+
+# - name: Checkout Repository
+
+# uses: actions/checkout@v4
+
+# # 🧩 Downloads your repo files into this runner.
+
+# # Each job runs in a fresh machine, so checkout is needed every time.
+
+# # ---------------------------------------------------------------
+
+# - name: Setup Node.js
+
+# uses: actions/setup-node@v4
+
+# with:
+
+# node-version: "20"
+
+# # ⚙️ Sets up Node.js environment (v20 in this case)
+
+# # Same version should be used in your local dev setup ideally.
+
+# # ---------------------------------------------------------------
+
+# - name: Build Frontend (React)
+
+# run: |
+
+# cd frontend # Go to frontend folder
+
+# npm install # Install all React dependencies
+
+# npm run build # Run production build (creates /dist or /build)
+
+# # npm run build = "react-scripts build" or similar from package.json
+
+# # This generates optimized JS/CSS for deployment.
+
+# # ---------------------------------------------------------------
+
+# - name: Install Backend Dependencies
+
+# run: |
+
+# cd backend
+
+# npm install
+
+# # Installs backend Node.js dependencies (Express, Mongoose, etc.)
+
+# # You could also add `npm run test` or `npm run lint` here if desired.
+
+# # ---------------------------------------------------------------
+
+# - name: Upload Build Artifacts for Next Jobs
+
+# uses: actions/upload-artifact@v4
+
+# with:
+
+# name: build_output
+
+# path: |
+
+# frontend/dist
+
+# backend
+
+# # 🧰 Uploads the built frontend and backend folders as "artifacts".
+
+# # These artifacts are temporary files GitHub saves between jobs.
+
+# # So the next jobs (test and deploy) can download the same exact build.
+
+# # Benefits:
+
+# # ✅ No need to rebuild in later jobs.
+
+# # ✅ Guarantees consistent code version across all stages.
+
+# # =====================================================================
+
+# # 🧪 JOB 2️⃣: TEST STAGE
+
+# # =====================================================================
+
+# test:
+
+# needs: build # ⛓️ Waits for build to finish successfully
+
+# runs-on: ubuntu-latest
+
+# steps:
+
+# - name: Download Build Artifacts
+
+# uses: actions/download-artifact@v4
+
+# with:
+
+# name: build_output
+
+# # 🧩 Downloads the exact build output from the previous "build" job.
+
+# # Now this job has both frontend (dist) and backend folders locally.
+
+# - name: Run Placeholder Tests
+
+# run: |
+
+# echo "✅ Tests successful (placeholder)"
+
+# # You can later replace with:
+
+# # npm run test → run your Jest or Mocha unit tests
+
+# # npx eslint . → check code style issues
+
+# # Example:
+
+# # cd backend && npm run test
+
+# # cd ../frontend && npm run test
+
+# # =====================================================================
+
+# # 🚀 JOB 3️⃣: DEPLOY STAGE
+
+# # =====================================================================
+
+# deploy:
+
+# needs: test # Waits for test job to succeed
+
+# runs-on: ubuntu-latest
+
+# steps:
+
+# - name: Download Build Artifacts
+
+# uses: actions/download-artifact@v4
+
+# with:
+
+# name: build_output
+
+# # 📦 Brings down the exact tested build (no rebuild needed)
+
+# # So the version you deploy = version that passed tests (very important)
+
+# # ---------------------------------------------------------------
+
+# - name: Setup SSH Agent
+
+# uses: webfactory/ssh-agent@v0.9.0
+
+# with:
+
+# ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+# # 🔐 Loads your private SSH key securely (from GitHub Secrets)
+
+# # GitHub runner uses it to connect to your VPS (like running ssh root@ip)
+
+# # ---------------------------------------------------------------
+
+# - name: Add VPS to Known Hosts
+
+# run: |
+
+# mkdir -p ~/.ssh
+
+# ssh-keyscan -H 147.93.20.180 >> ~/.ssh/known_hosts
+
+# # mkdir -p ~/.ssh → ensure SSH folder exists
+
+# # ssh-keyscan -H IP → adds server fingerprint to avoid "Are you sure?" prompts
+
+# # -H → hashes hostnames for security
+
+# # ---------------------------------------------------------------
+
+# - name: Upload Frontend Build Files to VPS
+
+# run: |
+
+# # ----------------------------------------------------------------
+
+# # rsync command breakdown:
+
+# # rsync → sync tool for copying files efficiently
+
+# # -a → archive mode (preserves permissions, timestamps, ownership)
+
+# # -v → verbose (shows file transfer details)
+
+# # -z → compress data during transfer (saves bandwidth)
+
+# # --delete → remove files on VPS that don’t exist locally
+
+# # --exclude=".env" → skip sensitive environment files
+
+# # ./frontend/dist/ → local source folder
+
+# # root@IP:/path → destination path on VPS
+
+# # ----------------------------------------------------------------
+
+# rsync -avz --delete --exclude=".env" ./frontend/dist/ root@147.93.20.180:/var/www/kalamkaam.in/auth_app/frontend/dist/
+
+# # ✅ Copies only changed files (smart sync) → faster deployment.
+
+# # ---------------------------------------------------------------
+
+# - name: Upload Backend Files to VPS
+
+# run: |
+
+# rsync -avz --delete --exclude="node_modules" --exclude=".env" ./backend/ root@147.93.20.180:/var/www/kalamkaam.in/auth_app/backend/
+
+# # --exclude="node_modules" → avoid uploading thousands of packages
+
+# # They will be reinstalled on VPS (clean and fast)
+
+# # Ensures your .env stays private on VPS
+
+# # ---------------------------------------------------------------
+
+# - name: Restart Application Services
+
+# run: |
+
+# ssh root@147.93.20.180 "
+
+# cd /var/www/kalamkaam.in/auth_app/backend
+
+# npm install --production
+
+# pm2 reload all
+
+# sudo systemctl restart nginx
+
+# "
+
+# # 🧠 Explanation:
+
+# # cd → navigate to backend folder
+
+# # npm install --production → install only necessary packages (no dev deps)
+
+# # pm2 reload all → refresh Node.js app without downtime
+
+# # sudo systemctl restart nginx → restart Nginx web server to serve frontend
