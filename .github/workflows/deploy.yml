@@ -186,15 +186,15 @@ jobs:
           # pm2 reload all → refresh Node.js app without downtime
           # sudo systemctl restart nginx → restart Nginx web server to serve frontend
 
-rollback:
-  needs: [build-and-test, deploy]
-  runs-on: ubuntu-latest
-  if: failure() # Only runs if previous jobs fail
+  rollback:
+    needs: [build-and-test, deploy]
+    runs-on: ubuntu-latest
+    if: failure() # Only runs if previous jobs fail
 
-  steps:
-    - name: Restore Last Backup
-      run: |
-        ssh root@147.93.20.180 "
+    steps:
+      - name: Restore Last Backup
+        run: |
+          ssh root@147.93.20.180 "
           systemctl stop auth_app
           cd /var/www/kalamkaam.in/backup
           latest_backup=\$(ls -t app_backup_*.tar.gz | head -1)
