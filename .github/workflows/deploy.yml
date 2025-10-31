@@ -64,9 +64,9 @@ jobs:
           name: build_output
 
       - name: Setup SSH-agent
-        uses: webfactory/ssh-agent@v0.09
+        uses: webfactory/ssh-agent@v0.9.0s
         with:
-          ssh-private-key: ${{secret.SSH_PRIVATE_KEY}}
+          ssh-private-key: ${{secrets.SSH_PRIVATE_KEY}}
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H 147.93.20.180 >> ~/.ssh.known_hosts
