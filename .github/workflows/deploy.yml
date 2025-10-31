@@ -187,7 +187,7 @@ jobs:
           # sudo systemctl restart nginx → restart Nginx web server to serve frontend
 
   rollback:
-    needs: [build, test, deploy]
+    needs: deploy
     runs-on: ubuntu-latest
     if: failure() # Only runs if previous jobs fail
 
@@ -195,9 +195,9 @@ jobs:
       - name: Restore Last Backup
         run: |
           ssh root@147.93.20.180 "
-          systemctl stop auth_app
-          cd /var/www/kalamkaam.in/backup
-          latest_backup=\$(ls -t app_backup_*.tar.gz | head -1)
-          tar -xzf \$latest_backup -C /var/www/kalamkaam.in
-          systemctl start auth_app
-        "
+            systemctl stop auth_app
+            cd /var/www/kalamkaam.in/backup
+            latest_backup=\$(ls -t app_backup_*.tar.gz | head -1)
+            tar -xzf \$latest_backup -C /var/www/kalamkaam.in
+            systemctl start auth_app
+          "
