@@ -10,7 +10,7 @@ dotenv.config({ quiet: true });
 const app = express();
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || "127.0.0.1";
-const DB_URI = process.env.DB_URI || "mongodb://localhost:27017/auth_app";
+const DB_URI = process.env.DB_URI;
 
 // Connect DB
 connectDB(DB_URI);
