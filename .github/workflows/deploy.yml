@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build , Install Frontend and Backend
+    name: Build, Install Frontend and Backend
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -25,7 +25,7 @@ jobs:
           npm install
           npm run build
 
-      - name: Install backend
+      - name: Install Backend
         run: |
           cd backend
           npm install
@@ -50,10 +50,10 @@ jobs:
 
       - name: Run Tests
         run: |
-          echo "Tested successfully"
+          echo "✅ Test Passed Successfully"
 
   deploy:
-    name: deploy
+    name: Deploy
     needs: [build, test]
     runs-on: ubuntu-latest
 
@@ -63,29 +63,36 @@ jobs:
         with:
           name: build_output
 
-      - name: Setup SSH-agent
+      - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{secrets.SSH_PRIVATE_KEY}}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Add VPS to known Host
+      - name: Add VPS to Known Hosts
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H 147.93.20.180 >> ~/.ssh/known_hosts
 
-      - name: upload frontend
+      - name: Create Target Folders on VPS
         run: |
-          rsync -avz --delete ./frontend/dist root@147.93.20.180:/var/www/kalamkaam.in/auth_app/frontend/dist
+          ssh root@147.93.20.180 "
+            mkdir -p /var/www/kalamkaam.in/auth_app/frontend/dist
+            mkdir -p /var/www/kalamkaam.in/auth_app/backend
+          "
 
-      - name: upload backend
+      - name: Upload Frontend
         run: |
-          rsync -avz --delete exclude="node_modules" exclude=."env" ./backend root@147.93.20.180:/var/www/kalamkaam.in/auth_app/backend/
+          rsync -avz --delete --exclude=".env" build_output/frontend/dist/ root@147.93.20.180:/var/www/kalamkaam.in/auth_app/frontend/dist/
+
+      - name: Upload Backend
+        run: |
+          rsync -avz --delete --exclude="node_modules" --exclude=".env" build_output/backend/ root@147.93.20.180:/var/www/kalamkaam.in/auth_app/backend/
 
       - name: Restart Server
         run: |
           ssh root@147.93.20.180 "
-          cd /var/www/kalamkaam.in/auth_app/backend
-          npm install --production
-          pm2 reload all
-          sudo systemctl restart nginx
+            cd /var/www/kalamkaam.in/auth_app/backend
+            npm install --production
+            pm2 reload all
+            sudo systemctl restart nginx
           "
