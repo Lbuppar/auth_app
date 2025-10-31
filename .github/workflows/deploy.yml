@@ -69,7 +69,7 @@ jobs:
           ssh-private-key: ${{secrets.SSH_PRIVATE_KEY}}
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H 147.93.20.180 >> ~/.ssh.known_hosts
+          ssh-keyscan -H 147.93.20.180 >> ~/.ssh/known_hosts
 
       - name: upload frontend
         run: |
