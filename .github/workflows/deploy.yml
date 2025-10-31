@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - main
-  workflows_dispatch:
+  # Add a colon and proper indentation here:
+  workflow_dispatch:
 
 jobs:
   build:
