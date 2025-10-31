@@ -51,3 +51,39 @@ jobs:
       - name: Run Tests
         run: |
           echo "Tested successfully"
+
+  deploy:
+    name: deploy
+    needs: [build, test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build_output
+
+      - name: Setup SSH-agent
+        uses: webfactory/ssh-agent@v0.09
+        with:
+          ssh-private-key: ${{secret.SSH_PRIVATE_KEY}}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H 147.93.20.180 >> ~/.ssh.known_hosts
+
+      - name: upload frontend
+        run: |
+          rsync -avz --delete ./frontend/dist root@147.93.20.180:/var/www/kalamkaam.in/auth_app/frontend/dist
+
+      - name: upload backend
+        run: |
+          rsync -avz --delete exclude="node_modules" exclude=."env" ./backend root@147.93.20.180:/var/www/kalamkaam.in/auth_app/backend/
+
+      - name: Restart Server
+        run: |
+          ssh root@147.93.20.180 "
+          cd /var/www/kalamkaam.in/auth_app/backend
+          npm install --production
+          pm2 reload all
+          sudo systemctl restart nginx
+          "
